@@ -48,7 +48,7 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
 /* ── LEFT PANEL ── */
 .left{width:280px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--bdr);background:var(--surf);transition:width .3s cubic-bezier(.4,0,.2,1);overflow:hidden;position:relative}
 .left.collapsed{width:0;border-right:none}
-.left-inner{min-width:280px;display:flex;flex-direction:column;flex:1;overflow:hidden}
+.left-inner{min-width:280px;display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0}
 
 /* ── Collapse button — always fixed to viewport ── */
 .collapse-btn{
@@ -77,13 +77,14 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
     transform:translateX(-105%);
     transition:transform .28s cubic-bezier(.4,0,.2,1)!important;
     z-index:800;overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
     border-right:1px solid var(--bdr)!important}
   .left.open{transform:translateX(0)!important}
   /* width collapse trick no longer needed on mobile */
   .left.collapsed{width:82vw!important;transform:translateX(-105%)!important}
   .left-inner{min-width:unset!important}
   /* Right panel scrolls on its own */
-  .right{overflow-y:auto!important}
+  .right{overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain}
   .spotlight{height:auto!important;overflow:visible!important;padding:12px!important}
   .sp-content{overflow:visible!important;height:auto!important}
   .tab-pane.on{display:block!important;height:auto!important;overflow:visible!important}
@@ -106,12 +107,13 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
   .det-grid{grid-template-columns:1fr 1fr!important}
   .radar-wrap{height:250px!important}
   .trade-bar{grid-template-columns:repeat(2,1fr)!important}
-  .topbar{flex-wrap:wrap}
-  .kpi-strip{overflow-x:auto}
+  .topbar{flex-wrap:wrap;max-height:320px;overflow:hidden;transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .25s ease,padding .32s ease}
+  .kpi-strip{overflow-x:auto;overflow-y:hidden;max-height:160px;transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .25s ease,padding .32s ease}
+  body.hdr-collapsed .topbar{max-height:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;pointer-events:none}
+  body.hdr-collapsed .kpi-strip{max-height:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;pointer-events:none}
 }
 /* Backdrop: hidden everywhere */
 .drawer-backdrop{display:none!important}
-}
 .left-ctrl{padding:10px 12px;border-bottom:1px solid var(--bdr);display:flex;flex-direction:column;gap:6px;flex-shrink:0}
 .srch{background:var(--s2);border:1px solid var(--bdr);border-radius:20px;padding:6px 12px;color:var(--txt);font-size:.75rem;outline:none;width:100%;transition:border-color .2s}
 .srch:focus{border-color:var(--neon)}
@@ -119,7 +121,7 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
 .rtab{flex:1;background:var(--s2);border:1px solid var(--bdr);border-radius:7px;padding:4px 2px;font-size:.58rem;font-weight:600;color:var(--sub);cursor:pointer;text-align:center;transition:all .2s;white-space:nowrap}
 .rtab:hover{border-color:var(--neon);color:var(--neon)}
 .rtab.on{background:var(--neon);border-color:var(--neon);color:#fff}
-.lb-list{overflow-y:auto;flex:1;padding:6px}
+.lb-list{overflow-y:auto;flex:1;padding:6px;min-height:0;-webkit-overflow-scrolling:touch}
 .lb-section-hdr{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);font-weight:700;padding:8px 6px 4px;display:flex;align-items:center;gap:6px;border-top:1px solid var(--bdr);margin-top:4px}
 .lb-section-hdr:first-child{border-top:none;margin-top:0}
 .lb-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;cursor:pointer;transition:all .2s;position:relative;margin-bottom:2px}
@@ -754,6 +756,38 @@ function toggleSidebar(){
     btn.title='Hide technicians';
     btn.classList.add('open');
   }
+})();
+
+// ── Mobile: auto-hide the header banner while scrolling down, reveal on scroll up ──
+(function(){
+  const MOBILE_MQ=window.matchMedia('(max-width:768px)');
+  const THRESHOLD=8; // px of movement required before toggling, avoids jitter
+  let collapsed=false;
+  const lastY={right:0,list:0};
+
+  function setCollapsed(state){
+    if(collapsed===state)return;
+    collapsed=state;
+    document.body.classList.toggle('hdr-collapsed',state);
+  }
+
+  function onScroll(key){
+    return function(e){
+      if(!MOBILE_MQ.matches)return;
+      const y=e.target.scrollTop;
+      const delta=y-lastY[key];
+      if(Math.abs(delta)<THRESHOLD)return;
+      lastY[key]=y;
+      if(y<=4){setCollapsed(false);return;} // always show banner right at the top
+      setCollapsed(delta>0); // scrolling down -> hide, scrolling up -> show
+    };
+  }
+
+  const rightEl=document.getElementById('right-panel');
+  const listEl=document.getElementById('lb-list');
+  if(rightEl)rightEl.addEventListener('scroll',onScroll('right'),{passive:true});
+  if(listEl)listEl.addEventListener('scroll',onScroll('list'),{passive:true});
+  MOBILE_MQ.addEventListener('change',e=>{if(!e.matches)setCollapsed(false);});
 })();
 
 buildKPI();buildLB();
