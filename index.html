@@ -491,7 +491,7 @@ function selectTradeAvg(role){
           <div class="dc"><div class="dl">Total Recalls</div><div class="dv ${totRecalls>0?'bad':'ok'}">${totRecalls}</div><div class="dg">Across all ${grp.length} techs</div></div>
           <div class="dc"><div class="dl">Goals Met</div><div class="dv" style="color:var(--gold)">${metOk.filter(Boolean).length}/4</div><div class="dg">${allOk?'All on target':'Some off target'}</div></div>
         </div>
-        <div style="overflow-x:auto;touch-action:pan-x">
+        <div style="overflow-x:auto">
           <table class="wo-tbl"><thead><tr>
             <th>Rank</th><th>Name</th><th onclick="">DTC ↓</th><th>DTC HP ↓</th><th>Response ↑</th><th>Self Perf ↑</th><th>FTF ↑</th><th>Score</th><th>Goals</th><th>Trend</th>
           </tr></thead><tbody>${detRows}</tbody></table>
@@ -506,6 +506,7 @@ function selectTradeAvg(role){
     document.querySelectorAll('#spotlight .sm-bar').forEach(b=>{const w=b.dataset.w||0;b.style.width='0';setTimeout(()=>b.style.width=w+'%',100);});
   },80);
   buildTradeSummary(role);
+  closeDrawerOnMobile(); // let the user actually see/scroll the group ranking table underneath
 }
 
 // ── Select tech ────────────────────────────────────────────────
@@ -707,14 +708,18 @@ function selectTech(name){
   if(!t)return;
   buildTradeSummary(t.role);
   renderSpotlight(t);
-  // On mobile: close the drawer so the user can see the spotlight
+  closeDrawerOnMobile();
+}
+// On mobile, viewing a tech spotlight or a trade ranking table should always
+// close the drawer -- otherwise it sits on top of #right-panel (z-index:800)
+// and silently swallows every touch/scroll/click meant for the content underneath.
+function closeDrawerOnMobile(){
   if(window.innerWidth<=768){
     const panel=document.getElementById('left-panel');
     const btn=document.getElementById('collapse-btn');
     panel.classList.remove('open');
     btn.textContent='\u2630';
     btn.title='Open menu';
-    // Scroll to top of right panel so spotlight is visible
     document.getElementById('right-panel').scrollTop=0;
   }
 }
