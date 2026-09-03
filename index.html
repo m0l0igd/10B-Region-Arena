@@ -68,7 +68,7 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
    The right panel scrolls independently.
    The FAB button is fixed bottom-right, always visible.
 ═══════════════════════════════════════════════ */
-@media(max-width:768px){
+@media(max-width:768px),(pointer:coarse) and (max-width:1024px){
   /* Left panel becomes a fixed drawer, slides in from left */
   .left{
     position:fixed!important;
@@ -111,9 +111,13 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
   .kpi-strip{overflow-x:auto;overflow-y:hidden;max-height:160px;transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .25s ease,padding .32s ease}
   body.hdr-collapsed .topbar{max-height:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;pointer-events:none}
   body.hdr-collapsed .kpi-strip{max-height:0!important;padding-top:0!important;padding-bottom:0!important;opacity:0;pointer-events:none}
+  /* Tap anywhere outside the open drawer to close it -- much easier than hunting for the FAB */
+  .drawer-backdrop.on{opacity:1;pointer-events:auto}
 }
-/* Backdrop: hidden everywhere */
-.drawer-backdrop{display:none!important}
+/* Dimmed overlay behind the open mobile drawer. Hidden/non-interactive until
+   .on is added by toggleSidebar(); only ever shown within the mobile media
+   query above since desktop has no drawer to dim behind. */
+.drawer-backdrop{position:fixed;inset:0;background:rgba(10,20,35,.45);z-index:750;opacity:0;pointer-events:none;transition:opacity .25s ease}
 .left-ctrl{padding:10px 12px;border-bottom:1px solid var(--bdr);display:flex;flex-direction:column;gap:6px;flex-shrink:0}
 .srch{background:var(--s2);border:1px solid var(--bdr);border-radius:20px;padding:6px 12px;color:var(--txt);font-size:.75rem;outline:none;width:100%;transition:border-color .2s}
 .srch:focus{border-color:var(--neon)}
@@ -244,14 +248,17 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
 <!-- KPI STRIP -->
 <div class="kpi-strip" id="kpi-strip"></div>
 
-<!-- Mobile drawer backdrop -->
-<div class="drawer-backdrop" id="drawer-backdrop" onclick="toggleSidebar()"></div>
-
 <!-- Sidebar toggle button - must be before <script> so JS can find it -->
 <button class="collapse-btn" id="collapse-btn" onclick="toggleSidebar()">&#9776;</button>
 
 <!-- BODY -->
 <div class="body">
+
+  <!-- Mobile drawer backdrop: lives inside .body so its z-index (750) is compared
+       against .left's z-index (800) in the SAME stacking context -- .body itself
+       only has z-index:1, so placing the backdrop as a SIBLING of .body (its old
+       location) made it paint over the entire .body subtree including the drawer. -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="toggleSidebar()"></div>
 
   <!-- LEFT: Leaderboard -->
   <div class="left" id="left-panel">
@@ -305,6 +312,11 @@ const fmtDelta=d=>d==null?'<span class="rk-delta rk-delta-none" title="No prior 
 const gc=b=>b?'var(--grn)':'var(--red)';
 const slug=n=>n.replace(/\s+/g,'-').toLowerCase();
 let curRole='All',curDays=30,selTech=null,radarChart=null;
+// Mobile layout = narrow viewport OR a touch-primary device up to phone-landscape
+// width (~1024px) -- width alone misses phones rotated sideways, since landscape
+// phone widths (390-932px) commonly exceed a plain max-width:768px check.
+const MOBILE_MQ=window.matchMedia('(max-width:768px),(pointer:coarse) and (max-width:1024px)');
+function isMobileLayout(){return MOBILE_MQ.matches;}
 
 // ── Clock ─────────────────────────────────────────────────────
 (function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});setTimeout(tick,1000);})();
@@ -714,10 +726,12 @@ function selectTech(name){
 // close the drawer -- otherwise it sits on top of #right-panel (z-index:800)
 // and silently swallows every touch/scroll/click meant for the content underneath.
 function closeDrawerOnMobile(){
-  if(window.innerWidth<=768){
+  if(isMobileLayout()){
     const panel=document.getElementById('left-panel');
     const btn=document.getElementById('collapse-btn');
+    const back=document.getElementById('drawer-backdrop');
     panel.classList.remove('open');
+    if(back)back.classList.remove('on');
     btn.textContent='\u2630';
     btn.title='Open menu';
     document.getElementById('right-panel').scrollTop=0;
@@ -746,7 +760,7 @@ function toggleSidebar(){
   const panel=document.getElementById('left-panel');
   const btn  =document.getElementById('collapse-btn');
   const back =document.getElementById('drawer-backdrop');
-  const mobile=window.innerWidth<=768;
+  const mobile=isMobileLayout();
   if(mobile){
     // Drawer mode: toggle .open on the panel
     const isOpen=panel.classList.toggle('open');
@@ -764,7 +778,7 @@ function toggleSidebar(){
 // On mobile start with drawer closed; on desktop start with panel open
 (function(){
   const btn=document.getElementById('collapse-btn');
-  if(window.innerWidth<=768){
+  if(isMobileLayout()){
     // Mobile: button is FAB showing hamburger. Panel starts hidden (translateX(-105%))
     btn.textContent='☰';
     btn.title='Open menu';
@@ -779,7 +793,6 @@ function toggleSidebar(){
 
 // ── Mobile: auto-hide the header banner while scrolling down, reveal on scroll up ──
 (function(){
-  const MOBILE_MQ=window.matchMedia('(max-width:768px)');
   const THRESHOLD=8; // px of movement required before toggling, avoids jitter
   let collapsed=false;
   const lastY={right:0,list:0};
