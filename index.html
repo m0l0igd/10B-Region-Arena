@@ -33,7 +33,7 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
 #clock{font-size:.62rem;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums;white-space:nowrap}
 
 /* ── KPI STRIP ── */
-.kpi-strip{display:flex;overflow-x:auto;background:var(--surf);border-bottom:1px solid var(--bdr);flex-shrink:0;scrollbar-width:none}
+.kpi-strip{display:flex;overflow-x:auto;touch-action:pan-x;background:var(--surf);border-bottom:1px solid var(--bdr);flex-shrink:0;scrollbar-width:none}
 .kpi-strip::-webkit-scrollbar{display:none}
 .kstat{flex:1;min-width:105px;padding:8px 12px;border-right:1px solid var(--bdr);text-align:center;position:relative}
 .kstat:last-child{border:none}
@@ -77,14 +77,14 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
     transform:translateX(-105%);
     transition:transform .28s cubic-bezier(.4,0,.2,1)!important;
     z-index:800;overflow-y:auto!important;
-    -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
     border-right:1px solid var(--bdr)!important}
   .left.open{transform:translateX(0)!important}
   /* width collapse trick no longer needed on mobile */
   .left.collapsed{width:82vw!important;transform:translateX(-105%)!important}
   .left-inner{min-width:unset!important}
   /* Right panel scrolls on its own */
-  .right{overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain}
+  .right{overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain;touch-action:pan-y!important}
   .spotlight{height:auto!important;overflow:visible!important;padding:12px!important}
   .sp-content{overflow:visible!important;height:auto!important}
   .tab-pane.on{display:block!important;height:auto!important;overflow:visible!important}
@@ -121,7 +121,7 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
 .rtab{flex:1;background:var(--s2);border:1px solid var(--bdr);border-radius:7px;padding:4px 2px;font-size:.58rem;font-weight:600;color:var(--sub);cursor:pointer;text-align:center;transition:all .2s;white-space:nowrap}
 .rtab:hover{border-color:var(--neon);color:var(--neon)}
 .rtab.on{background:var(--neon);border-color:var(--neon);color:#fff}
-.lb-list{overflow-y:auto;flex:1;padding:6px;min-height:0;-webkit-overflow-scrolling:touch}
+.lb-list{overflow-y:auto;flex:1;padding:6px;min-height:0;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 .lb-section-hdr{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sub);font-weight:700;padding:8px 6px 4px;display:flex;align-items:center;gap:6px;border-top:1px solid var(--bdr);margin-top:4px}
 .lb-section-hdr:first-child{border-top:none;margin-top:0}
 .lb-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;cursor:pointer;transition:all .2s;position:relative;margin-bottom:2px}
@@ -491,7 +491,7 @@ function selectTradeAvg(role){
           <div class="dc"><div class="dl">Total Recalls</div><div class="dv ${totRecalls>0?'bad':'ok'}">${totRecalls}</div><div class="dg">Across all ${grp.length} techs</div></div>
           <div class="dc"><div class="dl">Goals Met</div><div class="dv" style="color:var(--gold)">${metOk.filter(Boolean).length}/4</div><div class="dg">${allOk?'All on target':'Some off target'}</div></div>
         </div>
-        <div style="overflow-x:auto">
+        <div style="overflow-x:auto;touch-action:pan-x">
           <table class="wo-tbl"><thead><tr>
             <th>Rank</th><th>Name</th><th onclick="">DTC ↓</th><th>DTC HP ↓</th><th>Response ↑</th><th>Self Perf ↑</th><th>FTF ↑</th><th>Score</th><th>Goals</th><th>Trend</th>
           </tr></thead><tbody>${detRows}</tbody></table>
@@ -719,7 +719,21 @@ function selectTech(name){
   }
 }
 function doSearch(q){const ql=q.toLowerCase();document.querySelectorAll('.lb-row').forEach(r=>r.style.display=(!q||r.dataset.name.includes(ql))&&(curRole==='All'||r.dataset.role===curRole)?'':'none');}
-function setPeriod(d,btn){curDays=d;document.querySelectorAll('.pb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');buildKPI();buildLB();if(selTech){const t=techs().find(x=>x.name===selTech);if(t){renderSpotlight(t);buildTradeSummary(t.role);}};}
+function setPeriod(d,btn){
+  curDays=d;
+  document.querySelectorAll('.pb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  buildKPI();
+  if(selTech){
+    buildLB();
+    const t=techs().find(x=>x.name===selTech);
+    if(t){renderSpotlight(t);buildTradeSummary(t.role);}
+  }else if(selTradeAvg){
+    selectTradeAvg(selTradeAvg); // re-renders the leaderboard AND the trade ranking table for the new period
+  }else{
+    buildLB();
+  }
+}
 
 // ── Boot ──────────────────────────────────────────────────────
 // ── Sidebar toggle ───────────────────────────────────────────────
