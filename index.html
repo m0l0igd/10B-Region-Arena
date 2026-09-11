@@ -25,6 +25,7 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
 .live-dot{width:5px;height:5px;border-radius:50%;background:#4ade80;animation:blink 1.4s ease infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 .topbar-meta{font-size:.64rem;color:rgba(255,255,255,.8);line-height:1.7}
+.topbar-meta-wrap{display:flex;flex-direction:column}
 .topbar-meta b{color:#ffd873;font-weight:700}
 .period-bar{display:flex;gap:0;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:8px;overflow:hidden;margin-left:auto}
 .pb{background:none;border:none;border-right:1px solid rgba(255,255,255,.2);padding:5px 13px;font-size:.62rem;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer;letter-spacing:.06em;transition:all .2s;white-space:nowrap}
@@ -235,7 +236,10 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
     </div>
   </div>
   <div class="live-pill"><span class="live-dot"></span>LIVE</div>
-  <div class="topbar-meta">FS Sr Director: <b id="mgr"></b> &nbsp;·&nbsp; <span id="period-lbl"></span></div>
+  <div class="topbar-meta-wrap">
+    <div class="topbar-meta">FS Sr Director: <b id="mgr"></b> &nbsp;·&nbsp; <span id="period-lbl"></span></div>
+    <div class="topbar-meta">Director; <b>Tyler Matejovsky</b></div>
+  </div>
   <span id="clock"></span>
   <div class="period-bar">
     <button class="pb on" onclick="setPeriod(30,this)">30D</button>
@@ -823,5 +827,38 @@ function toggleSidebar(){
 })();
 
 buildKPI();buildLB();
+
+// ── Subtle tap feedback (vibration + quiet click tick) ──────────
+// Fires on every interactive element (buttons, tabs, tech/trade rows)
+// via one delegated listener instead of touching each onclick handler.
+// Kept deliberately quiet/short so it reads as "acknowledged" not "loud".
+(function(){
+  let feedbackCtx=null;
+  function playTick(){
+    try{
+      if(!feedbackCtx)feedbackCtx=new (window.AudioContext||window.webkitAudioContext)();
+      if(feedbackCtx.state==='suspended')feedbackCtx.resume();
+      const ctx=feedbackCtx;
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type='sine';
+      osc.frequency.value=880;
+      gain.gain.setValueAtTime(0.0001,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.035,ctx.currentTime+0.004);
+      gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.05);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime+0.06);
+    }catch(e){/* audio not available -- fail silently, vibration still fires */}
+  }
+  function tapFeedback(){
+    if(navigator.vibrate)navigator.vibrate(8); // very short, subtle buzz (mobile only)
+    playTick();
+  }
+  const TAPPABLE='button, [onclick], .lb-row, .lb-trade-row';
+  document.addEventListener('click',function(e){
+    if(e.target.closest(TAPPABLE))tapFeedback();
+  },true);
+})();
 </script>
 </body></html>
