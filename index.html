@@ -650,6 +650,7 @@ function buildDetails(t,grp){
 }
 
 // ── Bar Chart (replaces radar) ──────────────────────────────────────
+// ── Bar Chart (replaces radar) ────────────────────────
 function buildRadar(){
   if(radarChart)radarChart.destroy();
   const t=techs().find(x=>x.name===selTech);if(!t)return;
@@ -695,12 +696,13 @@ function buildRadar(){
 }
 
 // ── Trend charts: this exact tech, this exact role, across every time
-// period that actually has a real row for them (24H/3D/7D/30D/FY) --
+// period that actually has a real row for them. Ordered FY -> 24H, left
+// to right, so the timeline reads oldest window-start to most recent --
 // periods where they simply have zero completed WOs are skipped entirely
 // rather than plotted as a misleading 0, since there's no real row to
 // pull DTC/response/etc from in that case.
 function periodsForTech(name, role){
-  const order=[{key:'1',label:'24H'},{key:'3',label:'3D'},{key:'7',label:'7D'},{key:'30',label:'30D'},{key:'FY',label:'FY'}];
+  const order=[{key:'FY',label:'FY'},{key:'30',label:'30D'},{key:'7',label:'7D'},{key:'3',label:'3D'},{key:'1',label:'24H'}];
   return order.map(o=>{
     const row=(D.periods[o.key]||[]).find(x=>x.name===name&&x.role===role);
     return row?{label:o.label,row}:null;
