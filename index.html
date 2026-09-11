@@ -31,7 +31,8 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
 .pb{background:none;border:none;border-right:1px solid rgba(255,255,255,.2);padding:5px 13px;font-size:.62rem;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer;letter-spacing:.06em;transition:all .2s;white-space:nowrap}
 .pb:last-child{border-right:none}.pb:hover{color:#fff;background:rgba(255,255,255,.14)}
 .pb.on{background:#fff;color:#0071ce}
-#clock{font-size:.62rem;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums;white-space:nowrap}
+#clock{font-variant-numeric:tabular-nums;white-space:nowrap}
+.topbar-clock{font-size:.58rem;opacity:.6}
 
 /* ── KPI STRIP ── */
 .kpi-strip{display:flex;overflow-x:auto;touch-action:pan-x;background:var(--surf);border-bottom:1px solid var(--bdr);flex-shrink:0;scrollbar-width:none}
@@ -239,8 +240,8 @@ body::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg
   <div class="topbar-meta-wrap">
     <div class="topbar-meta">FS Sr Director: <b id="mgr"></b> &nbsp;·&nbsp; <span id="period-lbl"></span></div>
     <div class="topbar-meta">Director; <b>Tyler Matejovsky</b></div>
+    <div class="topbar-meta topbar-clock"><span id="clock"></span></div>
   </div>
-  <span id="clock"></span>
   <div class="period-bar">
     <button class="pb on" onclick="setPeriod(30,this)">30D</button>
     <button class="pb" onclick="setPeriod(7,this)">7D</button>
