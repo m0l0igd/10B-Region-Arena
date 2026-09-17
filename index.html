@@ -484,6 +484,7 @@ function selectTradeAvg(role){
       <td style="color:var(--gold);font-weight:800">${t.score}pts</td>
       <td class="rk-circle-cell"><span class="rk-dot" style="background:${allT?'var(--grn)':'transparent'};border-color:${allT?'var(--grn)':'var(--sub)'}"></span></td>
       <td>${fmtDelta(t.rank_delta)}</td>
+      <td>${miniSpark(t)}</td>
     </tr>`;
   }).join('');
   const html=`
@@ -517,7 +518,7 @@ function selectTradeAvg(role){
         </div>
         <div style="overflow-x:auto">
           <table class="wo-tbl"><thead><tr>
-            <th>Rank</th><th>Name</th><th onclick="">DTC ↓</th><th>DTC HP ↓</th><th>Response ↑</th><th>Self Perf ↑</th><th>FTF ↑</th><th>Score</th><th>Goals</th><th>Trend</th>
+            <th>Rank</th><th>Name</th><th onclick="">DTC ↓</th><th>DTC HP ↓</th><th>Response ↑</th><th>Self Perf ↑</th><th>FTF ↑</th><th>Score</th><th>Goals</th><th>Trend</th><th>Recent (30D→24H)</th>
           </tr></thead><tbody>${detRows}</tbody></table>
         </div>
       </div>
@@ -701,6 +702,17 @@ function buildRadar(){
 // periods where they simply have zero completed WOs are skipped entirely
 // rather than plotted as a misleading 0, since there's no real row to
 // pull DTC/response/etc from in that case.
+function miniSpark(t){
+  const pts=periodsForTech(t.name,t.role).filter(p=>p.label!=='FY');
+  if(pts.length<2)return'<span style="color:var(--sub);font-size:.62rem">no history</span>';
+  const vals=pts.map(p=>p.row.dtc).filter(v=>v!=null);
+  if(vals.length<2)return'<span style="color:var(--sub);font-size:.62rem">no history</span>';
+  const w=88,h=22,pad=3,min=Math.min(...vals),max=Math.max(...vals),range=(max-min)||1;
+  const stepX=(w-2*pad)/(vals.length-1);
+  const coords=vals.map((v,i)=>`${(pad+i*stepX).toFixed(1)},${(pad+((v-min)/range)*(h-2*pad)).toFixed(1)}`).join(' ');
+  const color=vals[vals.length-1]<=vals[0]?'#1c7d4d':'#b23b3b';
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${coords}" fill="none" stroke="${color}" stroke-width="1.6"/></svg>`;
+}
 function periodsForTech(name, role){
   const order=[{key:'FY',label:'FY'},{key:'30',label:'30D'},{key:'7',label:'7D'},{key:'3',label:'3D'},{key:'1',label:'24H'}];
   return order.map(o=>{
